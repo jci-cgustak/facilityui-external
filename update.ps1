@@ -7,23 +7,28 @@ $envVars = @(
                 }
                 @{
                     Name = 'ca_dictionary_SARAsset'
-                    Path = '\\c7engs002\SARROOT\sar\components\ca_dictionary_v1.0\ca_dictionary_v1.0_int'
+                    Path = '\\c7engs002\SARROOT\sar\components\ca_dictionary_v1.0'
+                    Build = '_int'
                 }
                 @{
                     Name = 'ca_mms_SARAsset'
-                    Path = '\\c7engs002\SARROOT\sar\components\ca_mms_v3.0\ca_mms_v3.0_sqa'
+                    Path = '\\c7engs002\SARROOT\sar\components\ca_mms_v3.0'
+                    Build = '_int'
                 }
                 @{
                     Name = 'mmda_SARAsset'
-                    Path = '\\c7engs002\SARROOT\sar\components\mmda_v6.3\mmda_v6.3_int'
+                    Path = '\\c7engs002\SARROOT\sar\components\mmda_v6.3'
+                    Build = '_int'
                 }
                 @{
                     Name = 'mmdb_SARAsset'
-                    Path = '\\c7engs002\SARROOT\sar\components\mmdb_v2.0\mmdb_v2.0_int'
+                    Path = '\\c7engs002\SARROOT\sar\components\mmdb_v2.0'
+                    Build = '_int'
                 }
                 @{
                     Name = 'mmui_SARAsset'
-                    Path = '\\c7engs002\SARROOT\sar\components\mmui_v1.0\mmui_v1.0_int'
+                    Path = '\\c7engs002\SARROOT\sar\components\mmui_v1.0'
+                    Build = '_int'
                 }
             )
 $configuration = 'Debug'
@@ -35,9 +40,14 @@ foreach ($envVar in $envVars)
 
     # Set environment variables
     $envPath = $envVar.Path -replace '\\\\c7engs002\\SARROOT', $psRoot
+    $envBuild = ''
     if (!$envVar.Skip)
     {
         $envPath = Join-Path $envPath '\latest'
+        $envBuild = $envVar.Path.split('\\')[-1] + $envVar.Build
+
+        # Move one directory forward
+        $envVar.Path = Join-Path $envVar.Path $envBuild
     }
     [System.Environment]::SetEnvironmentVariable($envVar.Name, $envPath, [System.EnvironmentVariableTarget]::User)
     
@@ -47,6 +57,8 @@ foreach ($envVar in $envVars)
     {
         $versionFile = Join-Path $envVar.Path '\current\version'
         $versionNumber = Get-Content $versionFile -TotalCount 1
+
+        # Move one directory forward
         $envVar.Path = Join-Path $envVar.Path $versionNumber
     }
 
@@ -62,13 +74,14 @@ foreach ($envVar in $envVars)
             $newFile = $_ -replace '\\\\c7engs002\\SARROOT', $psRoot
             if (!$envVar.Skip)
             {
-                $newFile = $newFile -replace $versionNumber, 'latest'
+                $newFile = $newFile -replace "$envBuild\\", '' -replace $versionNumber, 'latest'
             }
             $newPath = Split-Path $newFile
             if (!(Test-Path $newPath))
             {
                 md $newPath | Out-Null
             }
+            Write-Host "Copying $_"
             Copy-Item $_ -Destination $newPath
         }
 }
